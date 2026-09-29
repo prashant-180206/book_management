@@ -20,8 +20,14 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(user: User) -> str:
-    expires = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    return jwt.encode({"sub": str(user.id), "role": user.role, "exp": expires}, settings.secret_key, algorithm=ALGORITHM)
+    expires = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.access_token_expire_minutes
+    )
+    return jwt.encode(
+        {"sub": str(user.id), "role": user.role, "exp": expires},
+        settings.secret_key,
+        algorithm=ALGORITHM,
+    )
 
 
 def get_user_from_token(token: str, db: Session) -> User | None:
