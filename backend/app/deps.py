@@ -9,6 +9,7 @@ from .models import User
 from .security import get_user_from_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
 DbSession = Annotated[Session, Depends(get_db)]
 
 

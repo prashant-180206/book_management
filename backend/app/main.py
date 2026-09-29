@@ -18,6 +18,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Shelfwise API", version="1.0.0", lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 app.include_router(auth.router)
 app.include_router(books.router)
 
