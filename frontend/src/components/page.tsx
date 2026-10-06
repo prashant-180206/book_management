@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export function Page({ children }: PropsWithChildren) {
