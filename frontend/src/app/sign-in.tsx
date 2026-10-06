@@ -94,6 +94,7 @@ export default function SignInPage() {
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          accessibilityLabel="Email"
           style={styles.input}
         />
         <Text style={styles.label}>PASSWORD</Text>
@@ -101,6 +102,7 @@ export default function SignInPage() {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
+          accessibilityLabel="Password"
           style={styles.input}
         />
         <Pressable
@@ -115,6 +117,12 @@ export default function SignInPage() {
         {mutation.isError && (
           <Text style={styles.error}>{mutation.error.message}</Text>
         )}
+
+        <Pressable onPress={() => router.push("/sign-up")} style={styles.switchRow}>
+          <Text style={styles.switchText}>
+            New here? <Text style={styles.switchLink}>Create an account</Text>
+          </Text>
+        </Pressable>
       </View>
     </Page>
   );
@@ -250,4 +258,16 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#fff", fontWeight: "900", fontSize: 14 },
   error: { color: "#b4493b", marginTop: 14 },
+  switchRow: {
+    marginTop: 20,
+    alignSelf: "center",
+  },
+  switchText: {
+    color: "#6f7b73",
+    fontSize: 13,
+  },
+  switchLink: {
+    color: "#bc634d",
+    fontWeight: "800",
+  },
 });
