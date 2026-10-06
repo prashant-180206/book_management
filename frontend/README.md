@@ -1,56 +1,37 @@
-# Welcome to your Expo app 👋
+# Shelfwise client
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo (React Native + Web) frontend for Shelfwise, using Expo Router for
+navigation and TanStack React Query for server state. All API access
+goes through the Orval-generated hooks in `src/api/generated` — do not
+edit that directory by hand or add parallel fetch wrappers.
 
-## Get started
+## Setup
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+npm install
+# create .env with:
+# EXPO_PUBLIC_API_URL=http://127.0.0.1:8000
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Press `w` for desktop web, or scan the QR code with Expo Go.
 
-### Other setup steps
+## Scripts
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- `npx expo start` — dev server (append `--web` for web-only)
+- `npx tsc --noEmit` — typecheck
+- `npx expo lint` — lint
+- `npm run api:generate` — regenerate the Orval client from the
+  running API's `/openapi.json` (start the backend first)
 
-## Learn more
+## Screens (`src/app`)
 
-To learn more about developing your project with Expo, look at the following resources:
+Library (`/`), Discover (`/explore`), genre deep-links (`/shelf/[genre]`
+redirect to the matching Explore shelf), My Shelf (`/my-shelf`),
+admin analytics (`/analytics`), book detail (`/book/[id]`), sign-in and
+sign-up.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Shared pieces live in `src/components` (cards, modals, nav, page shell,
+reading-status control) and `src/utils/genres.ts`, which holds the one
+genre-matching rule used by shelf counts, shelf listings, analytics,
+and the library filter.
