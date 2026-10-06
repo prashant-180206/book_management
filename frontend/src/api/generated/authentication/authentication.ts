@@ -67,7 +67,7 @@ export const getGetMeUrl = () => {
 
 
 
-  return `/auth/me`
+  return `http://127.0.0.1:8000/auth/me`
 }
 
 /**
@@ -97,7 +97,7 @@ export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
 
 export const getGetMeQueryKey = () => {
     return [
-    `/auth/me`
+    `http://127.0.0.1:8000/auth/me`
     ] as const;
     }
 
@@ -193,7 +193,7 @@ export const getSignupUrl = () => {
 
 
 
-  return `/auth/signup`
+  return `http://127.0.0.1:8000/auth/signup`
 }
 
 /**
@@ -306,7 +306,7 @@ export const getLoginUrl = () => {
 
 
 
-  return `/auth/login`
+  return `http://127.0.0.1:8000/auth/login`
 }
 
 /**

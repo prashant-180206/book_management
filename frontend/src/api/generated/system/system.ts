@@ -59,7 +59,7 @@ export const getHealthHealthGetUrl = () => {
 
 
 
-  return `/health`
+  return `http://127.0.0.1:8000/health`
 }
 
 /**
@@ -89,7 +89,7 @@ export const healthHealthGet = async ( options?: RequestInit): Promise<healthHea
 
 export const getHealthHealthGetQueryKey = () => {
     return [
-    `/health`
+    `http://127.0.0.1:8000/health`
     ] as const;
     }
 

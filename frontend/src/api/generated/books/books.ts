@@ -81,7 +81,7 @@ export const getListBooksUrl = (params?: ListBooksParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/books?${stringifiedParams}` : `/books`
+  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/books?${stringifiedParams}` : `http://127.0.0.1:8000/books`
 }
 
 /**
@@ -111,7 +111,7 @@ export const listBooks = async (params?: ListBooksParams, options?: RequestInit)
 
 export const getListBooksQueryKey = (params?: ListBooksParams,) => {
     return [
-    `/books`, ...(params ? [params] : [])
+    `http://127.0.0.1:8000/books`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -207,7 +207,7 @@ export const getCreateBookUrl = () => {
 
 
 
-  return `/books`
+  return `http://127.0.0.1:8000/books`
 }
 
 /**
@@ -320,7 +320,7 @@ export const getGetBookUrl = (bookId: number,) => {
 
 
 
-  return `/books/${bookId}`
+  return `http://127.0.0.1:8000/books/${bookId}`
 }
 
 /**
@@ -350,7 +350,7 @@ export const getBook = async (bookId: number, options?: RequestInit): Promise<ge
 
 export const getGetBookQueryKey = (bookId: number,) => {
     return [
-    `/books/${bookId}`
+    `http://127.0.0.1:8000/books/${bookId}`
     ] as const;
     }
 
@@ -446,7 +446,7 @@ export const getUpdateBookUrl = (bookId: number,) => {
 
 
 
-  return `/books/${bookId}`
+  return `http://127.0.0.1:8000/books/${bookId}`
 }
 
 /**
@@ -560,7 +560,7 @@ export const getPatchBookUrl = (bookId: number,) => {
 
 
 
-  return `/books/${bookId}`
+  return `http://127.0.0.1:8000/books/${bookId}`
 }
 
 /**
@@ -674,7 +674,7 @@ export const getDeleteBookUrl = (bookId: number,) => {
 
 
 
-  return `/books/${bookId}`
+  return `http://127.0.0.1:8000/books/${bookId}`
 }
 
 /**

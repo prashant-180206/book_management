@@ -8,6 +8,7 @@ export default defineConfig({
       target: "src/api/generated/api.ts",
       client: "react-query",
       mode: "tags-split",
+      baseUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:8000",
       schemas: {
         splitByTags: true,
         path: "src/api/generated/schemas",
