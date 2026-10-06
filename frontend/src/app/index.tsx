@@ -17,6 +17,7 @@ import {
   useListBooks,
   useUpdateBook,
 } from "@/api/generated/books/books";
+import { getListShelfQueryKey } from "@/api/generated/shelf/shelf";
 import { BookCreate, BookResponse } from "@/api/generated/schemas";
 import { formatApiError } from "@/api/utils";
 import { BookCard } from "@/components/book-card";
@@ -25,10 +26,23 @@ import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { Page } from "@/components/page";
 import { TopNav } from "@/components/top-nav";
 import { useAuth } from "@/providers/auth-provider";
+import { deriveGenres, normalizeGenre } from "@/utils/genres";
+
+type SortKey = "recent" | "title-az" | "title-za" | "author-az" | "year-newest";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "recent", label: "Recently added" },
+  { key: "title-az", label: "Title A–Z" },
+  { key: "title-za", label: "Title Z–A" },
+  { key: "author-az", label: "Author A–Z" },
+  { key: "year-newest", label: "Published (newest)" },
+];
 
 export default function LibraryPage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
+  const [genreFilter, setGenreFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("recent");
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -80,6 +94,38 @@ export default function LibraryPage() {
   const bookList: BookResponse[] = Array.isArray(booksQuery.data?.data)
     ? (booksQuery.data.data as BookResponse[])
     : [];
+
+  const availableGenres = deriveGenres(bookList);
+
+  const visibleBooks = (() => {
+    const filtered =
+      genreFilter === "all"
+        ? bookList
+        : bookList.filter(
+            (book) => normalizeGenre(book.genre) === normalizeGenre(genreFilter)
+          );
+    const sorted = [...filtered];
+    switch (sortKey) {
+      case "title-az":
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "title-za":
+        sorted.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case "author-az":
+        sorted.sort((a, b) => a.author.localeCompare(b.author));
+        break;
+      case "year-newest":
+        sorted.sort(
+          (a, b) => (b.published_year ?? -1) - (a.published_year ?? -1)
+        );
+        break;
+      case "recent":
+      default:
+        break;
+    }
+    return sorted;
+  })();
 
   const handleCreateBook = async (bookData: BookCreate) => {
     setModalError(null);
@@ -154,6 +200,9 @@ export default function LibraryPage() {
 
       await queryClient.invalidateQueries({
         queryKey: getListBooksQueryKey(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getListShelfQueryKey(),
       });
 
       const title = deletingBook.title;
@@ -246,7 +295,7 @@ export default function LibraryPage() {
         </View>
         <View style={styles.stat}>
           <Text style={styles.statNumber}>
-            {booksQuery.isPending ? "—" : bookList.length}
+            {booksQuery.isPending ? "—" : visibleBooks.length}
           </Text>
           <Text style={styles.statLabel}>BOOKS</Text>
         </View>
@@ -256,8 +305,9 @@ export default function LibraryPage() {
         <TextInput
           value={search}
           onChangeText={setSearch}
-          placeholder="Search title, author, or genre"
+          placeholder="Search title, author, genre, or ISBN"
           placeholderTextColor="#9ba69e"
+          accessibilityLabel="Search books by title, author, genre, or ISBN"
           style={styles.search}
         />
 
@@ -268,13 +318,64 @@ export default function LibraryPage() {
         </Link>
       </View>
 
+      {!booksQuery.isPending && !booksQuery.isError && availableGenres.length > 0 && (
+        <View style={styles.filterRow}>
+          {["all", ...availableGenres].map((genre) => {
+            const active = genreFilter === genre;
+            return (
+              <Pressable
+                key={genre}
+                onPress={() => setGenreFilter(genre)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {genre === "all" ? "All genres" : genre}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {!booksQuery.isPending && !booksQuery.isError && bookList.length > 0 && (
+        <View style={styles.filterRow}>
+          {SORT_OPTIONS.map((option) => {
+            const active = sortKey === option.key;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => setSortKey(option.key)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       {booksQuery.isPending ? (
-        <ActivityIndicator color="#bc634d" style={styles.loader} />
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator color="#bc634d" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       ) : booksQuery.isError ? (
-        <Text style={styles.error}>{formatApiError(booksQuery.error)}</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.error}>
+            {formatApiError(booksQuery.error, "Couldn't load the books.")}
+          </Text>
+          <Pressable
+            onPress={() => booksQuery.refetch()}
+            style={[styles.secondary, { marginTop: 16 }]}
+          >
+            <Text style={styles.secondaryText}>Try again</Text>
+          </Pressable>
+        </View>
       ) : bookList.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No books found</Text>
+          <Text style={styles.emptyTitle}>No books found.</Text>
           <Text style={styles.emptySubtitle}>
             {search.trim()
               ? `No catalog matches for "${search}". Try another term.`
@@ -289,9 +390,25 @@ export default function LibraryPage() {
             </Pressable>
           )}
         </View>
+      ) : visibleBooks.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No books found.</Text>
+          <Text style={styles.emptySubtitle}>
+            {`No ${genreFilter} books match the current search.`}
+          </Text>
+          <Pressable
+            onPress={() => {
+              setGenreFilter("all");
+              setSearch("");
+            }}
+            style={[styles.secondary, { marginTop: 16 }]}
+          >
+            <Text style={styles.secondaryText}>Clear filters</Text>
+          </Pressable>
+        </View>
       ) : (
         <View>
-          {bookList.map((book) => (
+          {visibleBooks.map((book) => (
             <BookCard
               key={book.id}
               book={book}
@@ -503,6 +620,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
     marginBottom: 24,
+    flexWrap: "wrap",
+    gap: 12,
   },
   title: {
     color: "#1f2926",
@@ -555,7 +674,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   secondaryText: { color: "#1f2926", fontWeight: "800", fontSize: 13 },
+  filterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#1f2926",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minHeight: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  chipActive: {
+    backgroundColor: "#1f2926",
+  },
+  chipText: {
+    color: "#1f2926",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  chipTextActive: {
+    color: "#fff",
+  },
   loader: { marginTop: 40 },
+  loaderWrap: { marginTop: 40, alignItems: "center" },
+  loadingText: { color: "#6f7b73", fontSize: 13, marginTop: 12 },
   error: { color: "#b4493b", marginTop: 20 },
   toast: {
     backgroundColor: "#eaf3ec",

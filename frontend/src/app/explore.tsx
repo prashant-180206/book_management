@@ -15,6 +15,7 @@ import {
   useListBooks,
   useUpdateBook,
 } from "@/api/generated/books/books";
+import { getListShelfQueryKey } from "@/api/generated/shelf/shelf";
 import { BookCreate, BookResponse } from "@/api/generated/schemas";
 import { formatApiError } from "@/api/utils";
 import { BookCard } from "@/components/book-card";
@@ -23,12 +24,7 @@ import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { Page } from "@/components/page";
 import { TopNav } from "@/components/top-nav";
 import { useAuth } from "@/providers/auth-provider";
-
-// Single source of truth for genre matching. Both the directory counts
-// and the shelf filtering must use this so they can never diverge.
-export function normalizeGenre(value: string | null | undefined): string {
-  return (value ?? "").trim().toLowerCase();
-}
+import { deriveGenres, normalizeGenre } from "@/utils/genres";
 
 export default function ExplorePage() {
   const { token, user } = useAuth();
@@ -123,6 +119,9 @@ export default function ExplorePage() {
       await queryClient.invalidateQueries({
         queryKey: getListBooksQueryKey(),
       });
+      await queryClient.invalidateQueries({
+        queryKey: getListShelfQueryKey(),
+      });
 
       const title = deletingBook.title;
       setDeletingBook(null);
@@ -134,18 +133,7 @@ export default function ExplorePage() {
   };
 
   // Derive unique genres dynamically from the SAME bookList query data.
-  // Group case-insensitively so "Fiction" and "fiction" share one shelf;
-  // display the first-seen casing.
-  const uniqueGenres: string[] = (() => {
-    const byKey = new Map<string, string>();
-    for (const book of bookList) {
-      const raw = book.genre?.trim();
-      if (!raw) continue;
-      const key = normalizeGenre(raw);
-      if (!byKey.has(key)) byKey.set(key, raw);
-    }
-    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
-  })();
+  const uniqueGenres = deriveGenres(bookList);
 
   const rawGenreParam = Array.isArray(genreParam)
     ? genreParam[0]
@@ -207,12 +195,25 @@ export default function ExplorePage() {
           </View>
 
           {booksQuery.isPending ? (
-            <ActivityIndicator color="#bc634d" style={styles.loader} />
+            <View style={styles.loaderWrap}>
+              <ActivityIndicator color="#bc634d" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
           ) : booksQuery.isError ? (
-            <Text style={styles.error}>{formatApiError(booksQuery.error)}</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.error}>
+                {formatApiError(booksQuery.error, "Couldn't load the books.")}
+              </Text>
+              <Pressable
+                onPress={() => booksQuery.refetch()}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryButtonText}>Try again</Text>
+              </Pressable>
+            </View>
           ) : shelfBooks.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>No books on this shelf</Text>
+              <Text style={styles.emptyTitle}>No books found.</Text>
               <Text style={styles.emptySubtitle}>
                 No catalog items found under &quot;{selectedGenre}&quot;.
               </Text>
@@ -264,9 +265,22 @@ export default function ExplorePage() {
           </View>
 
           {booksQuery.isPending ? (
-            <ActivityIndicator color="#bc634d" style={styles.loader} />
+            <View style={styles.loaderWrap}>
+              <ActivityIndicator color="#bc634d" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
           ) : booksQuery.isError ? (
-            <Text style={styles.error}>{formatApiError(booksQuery.error)}</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.error}>
+                {formatApiError(booksQuery.error, "Couldn't load the books.")}
+              </Text>
+              <Pressable
+                onPress={() => booksQuery.refetch()}
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryButtonText}>Try again</Text>
+              </Pressable>
+            </View>
           ) : uniqueGenres.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyTitle}>No shelves yet</Text>
@@ -402,8 +416,23 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginTop: 4,
   },
-  loader: { marginTop: 40 },
-  error: { color: "#b4493b", marginTop: 20 },
+  loaderWrap: { marginTop: 40, alignItems: "center" },
+  loadingText: { color: "#6f7b73", fontSize: 13, marginTop: 12 },
+  error: { color: "#b4493b", marginTop: 20, textAlign: "center" },
+  retryButton: {
+    borderWidth: 1,
+    borderColor: "#1f2926",
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    marginTop: 16,
+    alignSelf: "center",
+  },
+  retryButtonText: { color: "#1f2926", fontWeight: "800", fontSize: 13 },
   section: { marginTop: 12, gap: 12 },
   genre: {
     backgroundColor: "#e7ede6",
