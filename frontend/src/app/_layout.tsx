@@ -10,6 +10,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="explore" />
+          <Stack.Screen name="shelf/[genre]" />
           <Stack.Screen name="sign-in" />
           <Stack.Screen name="book/[id]" />
         </Stack>
