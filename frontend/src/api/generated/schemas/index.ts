@@ -9,4 +9,5 @@ export * from './validationError';
 export * from './hTTPValidationError';
 export * from './authentication';
 export * from './books';
+export * from './shelf';
 export * from './system';
