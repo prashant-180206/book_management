@@ -33,7 +33,7 @@ export function ConfirmDeleteModal({
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.eyebrow}>CATALOG ACTION</Text>
-            <Text style={styles.title}>Remove from Library?</Text>
+            <Text style={styles.title}>Delete this book?</Text>
             <Text style={styles.message}>
               Are you sure you want to permanently delete{" "}
               <Text style={styles.highlight}>&quot;{bookTitle}&quot;</Text>? This action

@@ -125,6 +125,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
   },
   meta: { flexDirection: "row", gap: 12, alignItems: "center" },
   year: { color: "#1f2926", fontWeight: "800", fontSize: 12 },

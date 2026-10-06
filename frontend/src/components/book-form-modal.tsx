@@ -78,9 +78,16 @@ function BookFormInner({
       setLocalError("Please enter an author");
       return;
     }
-    if (!isbn.trim()) {
+    if (isbn.trim().length < 10) {
       setLocalError("Please enter an ISBN (at least 10 characters)");
       return;
+    }
+    if (publishedYear.trim()) {
+      const year = Number(publishedYear.trim());
+      if (!Number.isInteger(year) || year < 0 || year > 2100) {
+        setLocalError("Published year must be a whole number between 0 and 2100");
+        return;
+      }
     }
 
     const payload: BookCreate = {
@@ -105,7 +112,12 @@ function BookFormInner({
           <Text style={styles.eyebrow}>CATALOG MANAGEMENT</Text>
           <Text style={styles.headerTitle}>{title}</Text>
         </View>
-        <Pressable onPress={onClose} style={styles.closeButton}>
+        <Pressable
+          onPress={onClose}
+          style={styles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close dialog"
+        >
           <Text style={styles.closeButtonText}>✕</Text>
         </Pressable>
       </View>
@@ -134,6 +146,8 @@ function BookFormInner({
                 <Pressable
                   key={c}
                   onPress={() => setCoverColor(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Cover color ${c}`}
                   style={[
                     styles.swatch,
                     { backgroundColor: c },
