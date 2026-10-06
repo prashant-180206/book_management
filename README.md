@@ -1,162 +1,397 @@
 # Shelfwise
 
-A full-stack personal library manager. Browse and search a shared book
-catalog, explore genre shelves, keep a personal shelf with reading
-statuses, and (as an admin) manage the catalog and view catalog analytics.
+A minimal full-stack library management application for managing a shared book catalog and personal reading shelves.
 
-Built with **Expo (React Native / Web)** + **FastAPI**, sharing one
-OpenAPI contract via an **Orval-generated** TypeScript client backed by
-**TanStack React Query**.
+Shelfwise supports role-based access for readers and administrators, book discovery, catalog management, personal reading status, and lightweight catalog analytics.
 
 ## Features
 
-**Everyone (authenticated)**
-- Library catalog with search across title, author, genre, and ISBN
-- Genre filtering and sorting (recent, title A–Z/Z–A, author A–Z, newest published)
-- Discover shelves — genre directory where every shelf count and every
-  shelf listing come from the same books query (no hardcoded counts)
-- Book detail pages with cover, metadata, and description
-- My Shelf — save books to a personal shelf persisted per user in the database
-- Reading statuses per saved book: Want to Read / Reading / Finished,
-  with status filtering on My Shelf
-- Registration (new accounts are always readers) plus demo quick-login
+### Authentication & Roles
+- JWT-based authentication
+- Reader and Admin roles
+- Reader registration
+- Backend-enforced authorization
+- Development/demo accounts
 
-**Admins**
-- Add, edit, and delete books (with confirmation on delete)
-- Catalog analytics derived live from the database: totals, books by
-  genre, recently added
-- Changing a book's genre moves it between shelves immediately;
-  deleting a book removes it everywhere, including saved shelves
+### Library
+- Browse books
+- Search by title, author, genre, and ISBN
+- Genre filtering
+- Sorting by recently added, title, author, and publication year
+- Book details
+- Discover Shelves
+- Consistent genre filtering across the application
 
-**Platform**
-- JWT authentication, role enforcement on the backend (reader vs admin)
-- SQLite by default, PostgreSQL via `DATABASE_URL`
-- Health endpoint for load-balancer checks, interactive API docs
-- 20 automated backend tests (auth, roles, shelf regression, favorites, CRUD)
+### Personal Shelf
+- Save books to My Shelf
+- Remove books from My Shelf
+- Want to Read status
+- Reading status
+- Finished status
+- Per-user shelf and reading state
 
-## Tech stack
+### Administration
+- Add books
+- Edit books
+- Delete books
+- Cover color selection
+- Catalog search and filtering
+- Library statistics
+- Books by genre
+- Recently added books
 
-| Layer    | Technology                                                  |
-|----------|-------------------------------------------------------------|
-| Client   | Expo 57, React Native, React Native Web, TypeScript, Expo Router |
-| Data     | TanStack React Query, Orval-generated hooks (`src/api/generated`) |
-| API      | FastAPI, Pydantic, SQLAlchemy, JWT (python-jose), bcrypt     |
-| Database | SQLite (default) / PostgreSQL                               |
-| Ops      | Docker Compose, API container with `/health` checks          |
+### Reliability & Testing
+- FastAPI backend
+- OpenAPI-generated API hooks with Orval
+- TanStack React Query
+- Backend authorization
+- Automated backend tests
+- Shelf filtering regression tests
+- Per-user shelf isolation tests
+- CRUD and authentication tests
+- TypeScript type checking
 
-## Project structure
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React Native, React Native Web, Expo SDK 57, TypeScript |
+| Routing | Expo Router |
+| Styling | React Native StyleSheet, React Native Web, Vanilla CSS |
+| Data Fetching | TanStack React Query v5 |
+| API Client | Orval (OpenAPI-generated React Query hooks), Fetch API |
+| Backend | FastAPI, Uvicorn, Python 3.12+ |
+| ORM | SQLAlchemy 2.0 |
+| Validation | Pydantic v2, Pydantic Settings |
+| Authentication | JWT (python-jose), Passlib (bcrypt) |
+| Database | SQLite (default), PostgreSQL (via psycopg 3) |
+| Infrastructure | Docker, Docker Compose |
+
+## Architecture
 
 ```text
-backend/
-  app/
-    main.py          # FastAPI app, router wiring, lifespan seed
-    models.py        # User, Book, ShelfEntry
-    schemas.py       # Pydantic contracts (incl. reading statuses)
-    routers/
-      auth.py        # signup, login, me
-      books.py       # book CRUD + search (admin-guarded writes)
-      shelf.py       # personal shelf: list/add/status/remove
-    security.py deps.py config.py database.py seed.py
-  tests/             # pytest suite (isolated in-memory DB)
-  test_shelf_flow.py # manual end-to-end shelf verification script
-frontend/
-  src/
-    app/             # Expo Router screens: library, explore, shelf,
-                     # my-shelf, analytics, book detail, auth
-    api/generated/   # Orval client — do not edit by hand
-    components/      # BookCard, modals, nav, page, status control
-    utils/genres.ts  # single genre-matching rule used everywhere
+Frontend (Expo / React Native Web)
+  └── TanStack React Query
+        └── Orval-generated API hooks
+              └── FastAPI
+                    └── SQLAlchemy
+                          └── SQLite / PostgreSQL
 ```
 
-## Run locally
+- **OpenAPI Code Generation**: The frontend API hooks and TypeScript schemas are automatically generated from the backend's OpenAPI contract (`/openapi.json`) using Orval.
+- **Server State & Cache Invalidation**: TanStack React Query manages remote data caching, background re-validation, and targeted query cache invalidation after create, update, and delete mutations.
 
-Prerequisites: Python 3.13+, Node 20+.
+## Project Structure
 
-### 1. API
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-uvicorn app.main:app --reload
+```text
+.
+├── backend/
+│   ├── app/
+│   │   ├── routers/
+│   │   │   ├── auth.py          # Signup, registration, login, and current user routes
+│   │   │   ├── books.py         # Book CRUD and search (admin-restricted writes)
+│   │   │   └── shelf.py         # Personal shelf and reading status routes
+│   │   ├── config.py            # Pydantic Settings configuration
+│   │   ├── database.py          # SQLAlchemy engine and session factory
+│   │   ├── deps.py              # Dependency injection for DB session and auth
+│   │   ├── main.py              # FastAPI app instance, CORS, lifespan startup seed
+│   │   ├── models.py            # SQLAlchemy models (User, Book, ShelfEntry)
+│   │   ├── schemas.py           # Pydantic request and response schemas
+│   │   ├── security.py          # Password hashing and JWT helpers
+│   │   └── seed.py              # Initial demo users and starter book catalog
+│   ├── tests/
+│   │   ├── conftest.py          # Pytest fixtures and isolated in-memory DB setup
+│   │   ├── test_auth_roles.py   # Authentication and role authorization tests
+│   │   ├── test_health.py       # Health check endpoint test
+│   │   ├── test_my_shelf.py     # Personal shelf isolation and lifecycle tests
+│   │   └── test_shelf_filtering.py # Discover shelves and search regression tests
+│   ├── .env.example             # Backend environment variable template
+│   ├── Dockerfile               # Production-ready backend Dockerfile
+│   ├── pyproject.toml           # Python project metadata
+│   ├── pytest.ini               # Pytest configuration
+│   ├── requirements.txt         # Pinned Python package dependencies
+│   └── test_shelf_flow.py       # Standalone script for live shelf flow checks
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── generated/       # Orval-generated API client and React Query hooks
+│   │   │   └── utils.ts         # API error message normalization
+│   │   ├── app/                 # Expo Router screens
+│   │   │   ├── _layout.tsx      # Root provider wrapper and layout navigation
+│   │   │   ├── index.tsx        # Library catalog view (search, filter, sort)
+│   │   │   ├── explore.tsx      # Discover Shelves directory view
+│   │   │   ├── my-shelf.tsx     # Personal shelf view with reading statuses
+│   │   │   ├── analytics.tsx    # Admin catalog statistics and metrics
+│   │   │   ├── book/
+│   │   │   │   └── [id].tsx     # Book details view
+│   │   │   ├── shelf/
+│   │   │   │   └── [genre].tsx  # Shelf deep-link route
+│   │   │   ├── sign-in.tsx      # Sign-in authentication screen
+│   │   │   └── sign-up.tsx      # Reader registration screen
+│   │   ├── components/          # Reusable UI components (BookCard, modals, top nav)
+│   │   ├── constants/           # Colors and styling tokens
+│   │   ├── hooks/               # Custom utility hooks
+│   │   ├── providers/           # Context providers (Auth, TanStack Query)
+│   │   ├── services/            # Storage and API utilities
+│   │   └── utils/
+│   │       └── genres.ts        # Canonical genre normalization and aggregation
+│   ├── .env.example             # Frontend environment variable template
+│   ├── app.json                 # Expo project configuration
+│   ├── orval.config.ts          # Orval generation config targeting /openapi.json
+│   ├── package.json             # Node dependencies and NPM scripts
+│   └── tsconfig.json            # TypeScript configuration
+├── .env.example                 # Root environment variable template
+└── docker-compose.yml           # Multi-container setup (FastAPI + PostgreSQL)
 ```
 
-- API: http://127.0.0.1:8000
-- Interactive docs: http://127.0.0.1:8000/docs
-- Health: http://127.0.0.1:8000/health
+## Getting Started
 
-### 2. Client
+### Prerequisites
 
-```powershell
-cd frontend
-npm install
-# point the client at the API (create .env if missing):
-# EXPO_PUBLIC_API_URL=http://127.0.0.1:8000
-npx expo start
+- **Python**: 3.12+ (tested with Python 3.13)
+- **Node.js**: 20+
+- **Package Manager**: npm (or pnpm)
+- **Docker**: Optional (required only for PostgreSQL multi-container run)
+
+### Backend
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Create a virtual environment:
+   ```bash
+   python -m venv .venv
+   ```
+3. Activate the virtual environment:
+   - On Windows (PowerShell):
+     ```powershell
+     .\.venv\Scripts\Activate.ps1
+     ```
+   - On macOS/Linux:
+     ```bash
+     source .venv/bin/activate
+     ```
+4. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   *(On Windows PowerShell: `Copy-Item .env.example .env`)*
+6. Start the FastAPI development server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+- API Base URL: `http://127.0.0.1:8000`
+- Interactive API Documentation: `http://127.0.0.1:8000/docs`
+
+### Frontend
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npx expo start
+   ```
+4. Run the web application:
+   - Press `w` in the terminal to launch the web client in your default browser, or run:
+     ```bash
+     npx expo start --web
+     ```
+
+## Environment Variables
+
+### Backend Configuration
+
+The backend reads configuration using Pydantic Settings from `.env` in the `backend/` directory or system environment:
+
+```env
+DATABASE_URL=sqlite:///./shelfwise.db
+SECRET_KEY=replace-this-with-a-long-random-secret
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+CORS_ORIGINS=http://localhost:8081,http://localhost:19006
 ```
 
-Press `w` for desktop web, or scan the QR code with Expo Go for mobile.
+- `DATABASE_URL`: Connection URL for the database. Defaults to SQLite file `sqlite:///./shelfwise.db`. Supports PostgreSQL connection URLs (e.g., `postgresql+psycopg://user:password@host:5432/dbname`).
+- `SECRET_KEY`: Secret key used for signing JWT access tokens.
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Lifespan of issued JWT access tokens in minutes (default: `60`).
+- `CORS_ORIGINS`: Comma-separated list of allowed frontend origin URLs.
 
-### 3. Sign in
+### Frontend Configuration
 
-On first API startup the database seeds two demo accounts:
+The frontend reads configuration from `.env` in the `frontend/` directory:
 
-| Role  | Email                | Password   |
-|-------|----------------------|------------|
-| Admin | admin@shelfwise.dev  | Admin123!  |
-| Reader| reader@shelfwise.dev | Reader123! |
+```env
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8000
+```
 
-You can also register a new reader from the sign-up screen.
+- `EXPO_PUBLIC_API_URL`: Base URL of the backend FastAPI service accessible by the client application.
 
-## API reference
+## Demo Accounts
 
-| Method | Endpoint               | Auth  | Description                              |
-|--------|------------------------|-------|------------------------------------------|
-| POST   | `/auth/signup`         | —     | Register (always creates a reader)       |
-| POST   | `/auth/login`          | —     | Returns `access_token` + user            |
-| GET    | `/auth/me`             | User  | Current user                             |
-| GET    | `/books?search=`       | User  | List books (title/author/genre/ISBN)     |
-| POST   | `/books`               | Admin | Create book                              |
-| GET    | `/books/{id}`          | User  | Book details                             |
-| PUT    | `/books/{id}`          | Admin | Replace book                             |
-| PATCH  | `/books/{id}`          | Admin | Partial update                           |
-| DELETE | `/books/{id}`          | Admin | Delete book (+ its shelf entries)        |
-| GET    | `/shelf`               | User  | Own saved books                          |
-| POST   | `/shelf`               | User  | Save book (`409` if already saved)       |
-| PATCH  | `/shelf/{book_id}`     | User  | Set reading status                       |
-| DELETE | `/shelf/{book_id}`     | User  | Remove from shelf                        |
-| GET    | `/health`              | —     | Service status                           |
+On initial startup, Shelfwise automatically seeds two demonstration accounts into the database:
 
-## Testing & quality
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@shelfwise.dev` | `Admin123!` |
+| Reader | `reader@shelfwise.dev` | `Reader123!` |
 
-```powershell
-# backend: full suite (20 tests)
-cd backend
-.\.venv\Scripts\python.exe -m pytest tests/ -q
+> These credentials are for local development and demonstration only.
 
-# backend: manual shelf walkthrough against a running API
-.\.venv\Scripts\python.exe test_shelf_flow.py
+Readers can also self-register at any time from the sign-up interface.
 
-# frontend: typecheck + lint
+## API
+
+### Authentication
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/auth/login` | Public | Authenticates credentials and returns a JWT access token and user profile |
+| `POST` | `/auth/register` | Public | Registers a new reader account and returns an access token (`/auth/signup` supported) |
+| `GET` | `/auth/me` | Authenticated | Retrieves the profile of the currently authenticated user |
+
+### Books
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/books` | Authenticated | Returns the book catalog; supports optional `?search=` filtering across title, author, genre, and ISBN |
+| `GET` | `/books/{id}` | Authenticated | Retrieves detailed information for a specific book |
+| `POST` | `/books` | Admin | Creates a new book entry in the catalog |
+| `PUT` | `/books/{id}` | Admin | Replaces an existing book's details |
+| `PATCH` | `/books/{id}` | Admin | Partially updates specified fields of an existing book |
+| `DELETE` | `/books/{id}` | Admin | Deletes a book and removes all associated shelf entries |
+
+### Personal Shelf
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/shelf` | Authenticated | Retrieves personal shelf entries for the authenticated user |
+| `POST` | `/shelf` | Authenticated | Adds a book to the personal shelf (default status: `want_to_read`; returns `409` if already saved) |
+| `PATCH` | `/shelf/{book_id}` | Authenticated | Updates reading status (`want_to_read`, `reading`, `finished`) for a saved book |
+| `DELETE` | `/shelf/{book_id}` | Authenticated | Removes a book from the user's personal shelf |
+
+### System
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/health` | Public | Returns service health status (`{"status": "ok", "service": "shelfwise-api"}`) |
+
+## Testing
+
+Backend tests run using `pytest` against an isolated in-memory SQLite database.
+
+Run the test suite:
+
+```bash
+pytest tests/
+```
+
+*(On Windows using the project virtual environment: `.\.venv\Scripts\python.exe -m pytest tests/`)*
+
+The test suite contains **20 verified automated tests** covering:
+- **Authentication**: JWT token generation, invalid credential rejection, token expiration handling
+- **Role Authorization**: Role-based access enforcement (reader vs. admin boundaries)
+- **Book CRUD**: Creation, reading, updating, duplicate ISBN prevention, and deletion
+- **Shelf Filtering Regression**: Discover shelf counts and contents staying synchronized across mutations
+- **Shelf Isolation**: Strict per-user isolation of saved books and reading statuses
+- **Reading Status**: Lifecycle transitions between `want_to_read`, `reading`, and `finished`
+- **Shelf Cleanup After Book Deletion**: Automatic cleanup of shelf entries when a book is deleted from the catalog
+- **ISBN Search**: Exact and partial search queries across ISBN, title, author, and genre
+- **Registration**: Reader account creation and restriction from claiming admin privileges
+
+Frontend verification:
+```bash
+# Type checking
 cd frontend
 npx tsc --noEmit
-npx expo lint
 ```
 
-Regenerate the API client after backend contract changes (API must be
-running so Orval can read `/openapi.json`):
+## Development
 
-```powershell
-cd frontend
-npm run api:generate
+- **OpenAPI Schema**: FastAPI automatically exposes the full OpenAPI specification at `/openapi.json`.
+- **Code Generation**: Orval reads `/openapi.json` to generate TypeScript types and TanStack React Query hooks.
+  ```bash
+  cd frontend
+  npm run api:generate
+  ```
+- **Generated Client**: Generated code resides under `frontend/src/api/generated/`. Do not edit these files manually.
+- **Server State Management**: TanStack React Query manages caching and invalidates relevant queries on mutations.
+- **Shared Genre Utilities**: `frontend/src/utils/genres.ts` provides a single source of truth for normalizing and deriving genre lists across Explore, Library, and Analytics.
+
+Prefer existing generated API hooks over creating duplicate manual API wrappers.
+
+## Design Principles
+
+Shelfwise intentionally follows a design direction that is:
+- **minimal**
+- **editorial**
+- **library-focused**
+- **professional**
+- **accessible**
+- **functional**
+
+The interface prioritizes reading clarity, typographic hierarchy, and structural consistency over decorative effects.
+
+## Docker
+
+Docker Compose provides an optional local multi-container environment running the FastAPI application against PostgreSQL.
+
+To start all services:
+
+```bash
+docker compose up --build
 ```
 
-## Deployment notes
+Services started:
+- `api`: FastAPI application container built from `backend/Dockerfile`, exposed on port `8000`.
+- `db`: PostgreSQL 16 container (`postgres:16-alpine`), exposed on port `5432`, with persistent data volume `shelfwise-data` and health checking.
 
-- Set `DATABASE_URL` to PostgreSQL for production, e.g.
-  `postgresql+psycopg://user:password@host:5432/shelfwise`
-- Set a strong `SECRET_KEY`; expose `/health` to the load balancer
-- `docker-compose.yml` runs the API against PostgreSQL locally:
-  `docker compose up --build`
+Docker is optional; the project can be run locally using SQLite without Docker.
+
+## API Documentation
+
+FastAPI provides interactive API documentation when the backend server is running:
+- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+## Security Notes
+
+- Never commit `.env` files or credentials to version control.
+- Configure a strong, cryptographically secure `SECRET_KEY` in production environments.
+- Seed demo credentials are intended for local development only.
+- Authorization checks are strictly enforced by backend dependencies; reader tokens cannot execute administrative endpoints.
+- Readers cannot escalate privileges during registration or manipulate other users' shelf data.
+
+## Roadmap
+
+- Cursor-based or page-based pagination for larger book catalogs
+- Book cover image uploads and storage integration
+- Automated CI/CD deployment pipelines
+
+## License
+
+The root repository does not currently specify an open-source license. The frontend template includes an MIT License (`frontend/LICENSE`).
+
+## Contributing
+
+1. Create a branch for your work:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+2. Make focused changes conforming to existing code style.
+3. Run tests and type checks:
+   ```bash
+   pytest tests/
+   npx tsc --noEmit
+   ```
+4. Open a pull request with a clear description of changes.
