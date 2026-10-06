@@ -39,6 +39,18 @@ export function TopNav() {
           <Text style={styles.link}>Discover</Text>
         </Pressable>
 
+        {user && (
+          <Pressable onPress={() => router.push("/my-shelf")}>
+            <Text style={styles.link}>My Shelf</Text>
+          </Pressable>
+        )}
+
+        {user?.role === "admin" && (
+          <Pressable onPress={() => router.push("/analytics")}>
+            <Text style={styles.link}>Analytics</Text>
+          </Pressable>
+        )}
+
         <Pressable
           onPress={() => {
             signOut();

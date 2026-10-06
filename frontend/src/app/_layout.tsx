@@ -11,7 +11,10 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="explore" />
           <Stack.Screen name="shelf/[genre]" />
+          <Stack.Screen name="my-shelf" />
+          <Stack.Screen name="analytics" />
           <Stack.Screen name="sign-in" />
+          <Stack.Screen name="sign-up" />
           <Stack.Screen name="book/[id]" />
         </Stack>
       </AuthProvider>
