@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .routers import auth, books
+from .routers import auth, books, shelf
 from .seed import seed_database
 
 
@@ -29,6 +29,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(books.router)
+app.include_router(shelf.router)
 
 
 @app.get("/health", tags=["System"])

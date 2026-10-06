@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 
 from ..deps import DbSession, get_current_user, require_admin
-from ..models import Book, User
+from ..models import Book, ShelfEntry, User
 from ..schemas import BookCreate, BookResponse, BookUpdate
 
 router = APIRouter(prefix="/books", tags=["Books"])
@@ -20,7 +20,12 @@ def list_books(
     if search:
         term = f"%{search}%"
         query = query.where(
-            or_(Book.title.ilike(term), Book.author.ilike(term), Book.genre.ilike(term))
+            or_(
+                Book.title.ilike(term),
+                Book.author.ilike(term),
+                Book.genre.ilike(term),
+                Book.isbn.ilike(term),
+            )
         )
 
     return list(db.scalars(query).all())
@@ -117,6 +122,11 @@ def delete_book(book_id: int, db: DbSession, _: User = Depends(require_admin)) -
 
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
+
+    # Remove personal-shelf references first so no broken references
+    # remain (works identically on SQLite and PostgreSQL).
+    for entry in db.scalars(select(ShelfEntry).where(ShelfEntry.book_id == book_id)).all():
+        db.delete(entry)
 
     db.delete(book)
     db.commit()
