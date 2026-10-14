@@ -126,7 +126,7 @@ export default function MyShelfPage() {
 
   // Book details come from the shared /books query so saved books always
   // reflect the current catalog (same source of truth as the library).
-  const booksQuery = useListBooks(undefined, {
+  const booksQuery = useListBooks({ limit: 100 }, {
     fetch: {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -157,8 +157,9 @@ export default function MyShelfPage() {
     ? (shelfQuery.data.data as ShelfEntryResponse[])
     : [];
 
-  const bookList: BookResponse[] = Array.isArray(booksQuery.data?.data)
-    ? (booksQuery.data.data as BookResponse[])
+  const bookList: BookResponse[] = booksQuery.data?.data &&
+    "items" in booksQuery.data.data
+    ? booksQuery.data.data.items
     : [];
   const bookById = new Map(bookList.map((book) => [book.id, book]));
   const savedBooks = entries

@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./shelfwise.db"
     secret_key: str = "development-secret-change-me"
     access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 30
     cors_origins: str = "http://localhost:8081,http://localhost:19006"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

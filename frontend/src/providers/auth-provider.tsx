@@ -4,10 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
-import { Session, User } from "@/services/auth";
+import { refresh, Session, User } from "@/services/auth";
 
 type AuthContextValue = {
   token: string | null;
@@ -33,6 +34,7 @@ function getStoredSession(): Session | null {
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(getStoredSession);
+  const initialRefreshToken = useRef(session?.refresh_token);
 
   const signIn = (newSession: Session) => {
     setSession(newSession);
@@ -57,14 +59,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   };
 
   useEffect(() => {
-    // If not in state, check storage on mount
-    if (!session) {
-      const stored = getStoredSession();
-      if (stored) {
-        setSession(stored);
-      }
+    if (initialRefreshToken.current) {
+      refresh(initialRefreshToken.current)
+        .then((nextSession) => signIn(nextSession))
+        .catch(() => signOut());
     }
-  }, [session]);
+  }, []);
 
   const value = useMemo(
     () => ({

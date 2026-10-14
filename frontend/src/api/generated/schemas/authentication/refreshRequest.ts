@@ -5,6 +5,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type ListBooksBooksGetParams = {
-search?: string | null;
-};
+export interface RefreshRequest {
+  refresh_token: string;
+}

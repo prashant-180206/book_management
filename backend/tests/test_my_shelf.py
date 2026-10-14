@@ -8,7 +8,7 @@ from conftest import auth_headers, login
 def _books(client: TestClient, token: str) -> list:
     resp = client.get("/books", headers=auth_headers(token))
     assert resp.status_code == 200, resp.text
-    return resp.json()
+    return resp.json()["items"]
 
 
 def test_add_list_remove_shelf_entry(client: TestClient) -> None:

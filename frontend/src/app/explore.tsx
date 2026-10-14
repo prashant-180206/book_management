@@ -38,7 +38,7 @@ export default function ExplorePage() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  const booksQuery = useListBooks(undefined, {
+  const booksQuery = useListBooks({ limit: 100 }, {
     fetch: {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -65,8 +65,9 @@ export default function ExplorePage() {
     },
   });
 
-  const bookList: BookResponse[] = Array.isArray(booksQuery.data?.data)
-    ? (booksQuery.data.data as BookResponse[])
+  const bookList: BookResponse[] = booksQuery.data?.data &&
+    "items" in booksQuery.data.data
+    ? booksQuery.data.data.items
     : [];
 
   const handleUpdateBook = async (bookData: BookCreate) => {

@@ -7,4 +7,11 @@
 
 export type ListBooksParams = {
 search?: string | null;
+cursor?: string | null;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+offset?: number | null;
 };

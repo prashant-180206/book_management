@@ -29,7 +29,9 @@ seeded on startup). For PostgreSQL, set `DATABASE_URL`, e.g.
 - `app/schemas.py` — request/response contracts, reading-status literal
 - `app/routers/auth.py` — signup (always reader), login, me
 - `app/routers/books.py` — CRUD; writes require admin; search covers
-  title, author, genre, and ISBN; delete also clears shelf entries
+  title, author, genre, and ISBN; list results use bounded cursor pagination
+  (`limit`, `cursor`) with a guarded compatibility `offset`; delete also
+  clears shelf entries
 - `app/routers/shelf.py` — list/add/update-status/remove for the
   authenticated user's own shelf (duplicate saves return 409)
 

@@ -44,6 +44,7 @@ export default function SignUpPage() {
           // New accounts always receive the reader role (backend default).
           signIn({
             access_token: res.data.access_token,
+            refresh_token: res.data.refresh_token,
             user: {
               id: res.data.user.id,
               email: res.data.user.email,

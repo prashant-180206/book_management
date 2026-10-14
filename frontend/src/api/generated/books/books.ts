@@ -27,6 +27,7 @@ import type {
   BookCreate,
   BookResponse,
   BookUpdate,
+  BooksPage,
   HTTPValidationError,
   ListBooksParams
 } from '../schemas';
@@ -51,7 +52,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export type listBooksResponse200 = {
-  data: BookResponse[]
+  data: BooksPage
   status: 200
 }
 

@@ -3,8 +3,14 @@ from sqlalchemy import select
 
 from ..deps import DbSession, get_current_user
 from ..models import User
-from ..schemas import LoginRequest, Token, UserResponse, SignupRequest
-from ..security import create_access_token, hash_password, verify_password
+from ..schemas import LoginRequest, RefreshRequest, Token, UserResponse, SignupRequest
+from ..security import (
+    create_access_token,
+    create_refresh_token,
+    get_user_from_refresh_token,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -42,6 +48,7 @@ def signup(payload: SignupRequest, db: DbSession) -> Token:
 
     return Token(
         access_token=create_access_token(user),
+        refresh_token=create_refresh_token(user),
         user=UserResponse.model_validate(user),
     )
 
@@ -62,5 +69,22 @@ def login(payload: LoginRequest, db: DbSession) -> Token:
 
     return Token(
         access_token=create_access_token(user),
+        refresh_token=create_refresh_token(user),
+        user=UserResponse.model_validate(user),
+    )
+
+
+@router.post("/refresh", response_model=Token, operation_id="refreshToken")
+def refresh_token(payload: RefreshRequest, db: DbSession) -> Token:
+    user = get_user_from_refresh_token(payload.refresh_token, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    return Token(
+        access_token=create_access_token(user),
+        refresh_token=create_refresh_token(user),
         user=UserResponse.model_validate(user),
     )

@@ -7,6 +7,6 @@
 
 export * from './bookCreate';
 export * from './bookResponse';
+export * from './booksPage';
 export * from './bookUpdate';
-export * from './listBooksBooksGetParams';
 export * from './listBooksParams';

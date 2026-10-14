@@ -18,7 +18,7 @@ import { deriveGenres, normalizeGenre } from "@/utils/genres";
 export default function AnalyticsPage() {
   const { token, user } = useAuth();
 
-  const booksQuery = useListBooks(undefined, {
+  const booksQuery = useListBooks({ limit: 100 }, {
     fetch: {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -29,8 +29,9 @@ export default function AnalyticsPage() {
     },
   });
 
-  const bookList: BookResponse[] = Array.isArray(booksQuery.data?.data)
-    ? (booksQuery.data.data as BookResponse[])
+  const bookList: BookResponse[] = booksQuery.data?.data &&
+    "items" in booksQuery.data.data
+    ? booksQuery.data.data.items
     : [];
 
   if (user && user.role !== "admin") {

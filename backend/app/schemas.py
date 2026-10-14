@@ -10,6 +10,7 @@ ReadingStatus = Literal["want_to_read", "reading", "finished"]
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     user: "UserResponse"
 
@@ -61,6 +62,16 @@ class BookResponse(BookBase):
 
     id: int
     created_at: datetime | None = None
+
+
+class BooksPage(BaseModel):
+    items: list[BookResponse]
+    next_cursor: str | None = None
+    has_more: bool
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class ShelfAddRequest(BaseModel):

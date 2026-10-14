@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useDebounce } from "use-debounce";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -41,6 +42,9 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 export default function LibraryPage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search.trim(), 300);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadedBooks, setLoadedBooks] = useState<BookResponse[]>([]);
   const [genreFilter, setGenreFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
 
@@ -54,7 +58,11 @@ export default function LibraryPage() {
   const queryClient = useQueryClient();
 
   const booksQuery = useListBooks(
-    search.trim() ? { search: search.trim() } : undefined,
+    {
+      limit: 20,
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      ...(cursor ? { cursor } : {}),
+    },
     {
       fetch: {
         headers: {
@@ -89,11 +97,19 @@ export default function LibraryPage() {
         Authorization: `Bearer ${token}`,
       },
     },
-  });
+  }  );
 
-  const bookList: BookResponse[] = Array.isArray(booksQuery.data?.data)
-    ? (booksQuery.data.data as BookResponse[])
-    : [];
+  useEffect(() => {
+    const page = booksQuery.data?.data;
+    if (!page || !("items" in page) || !Array.isArray(page.items)) return;
+    // Query data is the external source; retain prior pages for cursor loading.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadedBooks((current) =>
+      cursor ? [...current, ...page.items] : page.items
+    );
+  }, [booksQuery.data, cursor]);
+
+  const bookList = loadedBooks;
 
   const availableGenres = deriveGenres(bookList);
 
@@ -304,7 +320,10 @@ export default function LibraryPage() {
       <View style={styles.toolbar}>
         <TextInput
           value={search}
-          onChangeText={setSearch}
+          onChangeText={(value) => {
+            setSearch(value);
+            setCursor(null);
+          }}
           placeholder="Search title, author, genre, or ISBN"
           placeholderTextColor="#9ba69e"
           accessibilityLabel="Search books by title, author, genre, or ISBN"
@@ -420,6 +439,25 @@ export default function LibraryPage() {
               onDelete={(b) => setDeletingBook(b)}
             />
           ))}
+          {booksQuery.data?.data &&
+            "has_more" in booksQuery.data.data &&
+            "next_cursor" in booksQuery.data.data &&
+            booksQuery.data.data.has_more && (
+              <Pressable
+                onPress={() => {
+                  const data = booksQuery.data?.data;
+                  if (data && "next_cursor" in data) {
+                    setCursor(data.next_cursor ?? null);
+                  }
+                }}
+                disabled={booksQuery.isFetching}
+                style={[styles.secondary, { marginTop: 16 }]}
+              >
+                <Text style={styles.secondaryText}>
+                  {booksQuery.isFetching ? "Loading..." : "Load more"}
+                </Text>
+              </Pressable>
+            )}
         </View>
       )}
 

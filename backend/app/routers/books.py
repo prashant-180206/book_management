@@ -1,19 +1,54 @@
+import base64
+import binascii
+import json
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 
 from ..deps import DbSession, get_current_user, require_admin
 from ..models import Book, ShelfEntry, User
-from ..schemas import BookCreate, BookResponse, BookUpdate
+from ..schemas import BookCreate, BookResponse, BooksPage, BookUpdate
 
 router = APIRouter(prefix="/books", tags=["Books"])
 
 
-@router.get("", response_model=list[BookResponse], operation_id="listBooks")
+MAX_PAGE_SIZE = 100
+MAX_OFFSET = 10_000
+
+
+def _encode_cursor(book: Book) -> str:
+    value = json.dumps(
+        {"created_at": book.created_at.isoformat(), "id": book.id},
+        separators=(",", ":"),
+    ).encode()
+    return base64.urlsafe_b64encode(value).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> tuple[datetime, int]:
+    try:
+        padding = "=" * (-len(cursor) % 4)
+        value = json.loads(base64.urlsafe_b64decode(cursor + padding))
+        created_at = datetime.fromisoformat(value["created_at"])
+        book_id = int(value["id"])
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError, binascii.Error):
+        raise HTTPException(status_code=400, detail="Invalid pagination cursor")
+    return created_at, book_id
+
+
+@router.get("", response_model=BooksPage, operation_id="listBooks")
 def list_books(
     db: DbSession,
     _: User = Depends(get_current_user),
     search: str | None = Query(default=None),
-) -> list[Book]:
+    cursor: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=MAX_PAGE_SIZE),
+    offset: int | None = Query(default=None, ge=0, le=MAX_OFFSET),
+) -> BooksPage:
+    if cursor and offset is not None:
+        raise HTTPException(
+            status_code=400, detail="Use either cursor or offset, not both"
+        )
 
     query = select(Book).order_by(Book.created_at.desc())
 
@@ -28,7 +63,25 @@ def list_books(
             )
         )
 
-    return list(db.scalars(query).all())
+    if cursor:
+        created_at, book_id = _decode_cursor(cursor)
+        query = query.where(
+            or_(
+                Book.created_at < created_at,
+                and_(Book.created_at == created_at, Book.id < book_id),
+            )
+        )
+    elif offset is not None and offset > 0:
+        query = query.offset(offset)
+
+    books = list(db.scalars(query.limit(limit + 1)).all())
+    has_more = len(books) > limit
+    items = books[:limit]
+    return BooksPage(
+        items=items,
+        next_cursor=_encode_cursor(items[-1]) if has_more else None,
+        has_more=has_more,
+    )
 
 
 @router.get("/{book_id}", response_model=BookResponse, operation_id="getBook")

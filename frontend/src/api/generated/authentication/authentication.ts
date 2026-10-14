@@ -26,6 +26,7 @@ import type {
 import type {
   HTTPValidationError,
   LoginRequest,
+  RefreshRequest,
   SignupRequest,
   Token,
   UserResponse
@@ -394,4 +395,117 @@ export const useLogin = <TError = HTTPValidationError,
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+    export type refreshTokenResponse200 = {
+  data: Token
+  status: 200
+}
+
+export type refreshTokenResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type refreshTokenResponseSuccess = (refreshTokenResponse200) & {
+  headers: Headers;
+};
+export type refreshTokenResponseError = (refreshTokenResponse422) & {
+  headers: Headers;
+};
+
+export type refreshTokenResponse = (refreshTokenResponseSuccess | refreshTokenResponseError)
+
+export const getRefreshTokenUrl = () => {
+
+
+
+
+  return `http://127.0.0.1:8000/auth/refresh`
+}
+
+/**
+ * @summary Refresh Token
+ */
+export const refreshToken = async (refreshRequest: RefreshRequest, options?: RequestInit): Promise<refreshTokenResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getRefreshTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refreshRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: refreshTokenResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as refreshTokenResponse
+}
+
+
+
+
+
+export const getRefreshTokenMutationKey = () => ['refreshToken'] as const;
+
+export const getRefreshTokenMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,RefreshTokenMutationVariables, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,RefreshTokenMutationVariables, TContext> => {
+
+const mutationKey = getRefreshTokenMutationKey();
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshToken>>, RefreshTokenMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  refreshToken(data,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshTokenMutationResult = NonNullable<Awaited<ReturnType<typeof refreshToken>>>
+    export type RefreshTokenMutationBody = RefreshRequest
+    export type RefreshTokenMutationError = HTTPValidationError
+    export type RefreshTokenMutationVariables = {data: RefreshRequest}
+
+    /**
+ * @summary Refresh Token
+ */
+export const useRefreshToken = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,RefreshTokenMutationVariables, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refreshToken>>,
+        TError,
+        RefreshTokenMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefreshTokenMutationOptions(options), queryClient);
     }

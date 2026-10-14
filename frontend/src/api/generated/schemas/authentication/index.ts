@@ -6,6 +6,7 @@
  */
 
 export * from './loginRequest';
+export * from './refreshRequest';
 export * from './signupRequest';
 export * from './token';
 export * from './userResponse';

@@ -14,7 +14,7 @@ from conftest import auth_headers, login
 def _books(client: TestClient, token: str) -> list:
     resp = client.get("/books", headers=auth_headers(token))
     assert resp.status_code == 200, resp.text
-    return resp.json()
+    return resp.json()["items"]
 
 
 def _in_genre(books: list, genre: str) -> list:
@@ -116,5 +116,5 @@ def test_search_finds_title_author_genre_and_isbn(client: TestClient) -> None:
             "/books", headers=auth_headers(token), params={"search": term}
         )
         assert resp.status_code == 200, resp.text
-        titles = [b["title"] for b in resp.json()]
+        titles = [b["title"] for b in resp.json()["items"]]
         assert titles == expected, f"search={term!r}"
